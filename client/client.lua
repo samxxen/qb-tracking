@@ -6,9 +6,8 @@ local Strings = {}
 
 
 local function LoadLanguage()
-    local lang = Config.Locale 
+    local lang = Config.Locale or 'en'
     
-
     if lang == 'ar' then
         Strings = {
             ['tracking_started'] = 'تم بدء تعقب الهدف',
@@ -22,7 +21,8 @@ local function LoadLanguage()
             ['phone_input_label'] = 'رقم الهاتف',
             ['phone_input_desc'] = 'أدخل رقم الهاتف المراد تعقبه',
             ['blip_name'] = 'موقع التعقب',
-            ['use_tracker'] = 'استخدام جهاز التعقب'
+            ['use_tracker'] = 'استخدام جهاز التعقب',
+            ['tracker_item_name'] = 'جهاز التعقب'
         }
     else
         Strings = {
@@ -37,15 +37,24 @@ local function LoadLanguage()
             ['phone_input_label'] = 'Phone Number',
             ['phone_input_desc'] = 'Enter the phone number to track',
             ['blip_name'] = 'Tracking Location',
-            ['use_tracker'] = 'Use Tracking Device'
+            ['use_tracker'] = 'Use Tracking Device',
+            ['tracker_item_name'] = 'Tracking Device'
         }
     end
 end
 
 
-CreateThread(function()
-    LoadLanguage()
-end)
+local function HasPermission()
+    local PlayerData = QBCore.Functions.GetPlayerData()
+    if not PlayerData then return false end
+    
+    for _, job in ipairs(Config.AllowedJobs) do
+        if PlayerData.job.name == job and PlayerData.job.onduty then
+            return true
+        end
+    end
+    return false
+end
 
 local function CreateTrackingBlip(coords)
     if trackingBlip and DoesBlipExist(trackingBlip) then
@@ -78,6 +87,11 @@ local function CreateTrackingBlip(coords)
     end)
 end
 
+
+CreateThread(function()
+    LoadLanguage()
+end)
+
 RegisterNetEvent('code:tracking:startClientTracking', function(coords)
     if isTracking then return end
     isTracking = true
@@ -86,7 +100,7 @@ RegisterNetEvent('code:tracking:startClientTracking', function(coords)
 end)
 
 RegisterNetEvent('code:tracking:targetMinigame', function(requesterId)
-    local minigameResult = exports["code-tracking"]:Minigame(1, 30)
+    local minigameResult = exports["five-repairkit"]:Minigame(1, 30)
     
     if minigameResult and minigameResult == true then
         QBCore.Functions.Notify(Strings['tracking_blocked'], 'success')
@@ -98,8 +112,7 @@ RegisterNetEvent('code:tracking:targetMinigame', function(requesterId)
 end)
 
 RegisterNetEvent('code:tracking:useTrackerItem', function()
-    local PlayerData = QBCore.Functions.GetPlayerData()
-    if not PlayerData or PlayerData.job.name ~= 'police' or not PlayerData.job.onduty then
+    if not HasPermission() then
         QBCore.Functions.Notify(Strings['no_permission'], 'error')
         return
     end
