@@ -1,8 +1,19 @@
 QBCore = exports['qb-core']:GetCoreObject()
-local Strings = {}
 
 
-QBCore.Functions.CreateUseableItem("tracker", function(source)
+local function HasPermission(source)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return false end
+    
+    for _, job in ipairs(Config.AllowedJobs) do
+        if Player.PlayerData.job.name == job and Player.PlayerData.job.onduty then
+            return true
+        end
+    end
+    return false
+end
+
+QBCore.Functions.CreateUseableItem(Config.TrackerItem, function(source)
     TriggerClientEvent('code:tracking:useTrackerItem', source)
 end)
 
@@ -20,9 +31,7 @@ end)
 
 RegisterNetEvent('code:tracking:startTracking', function(targetId)
     local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-
-    if not Player or Player.PlayerData.job.name ~= 'police' or not Player.PlayerData.job.onduty then
+    if not HasPermission(src) then
         print(('^5[TRACKING] ^1Unauthorized use attempt by ID: %s^0'):format(src))
         return
     end
